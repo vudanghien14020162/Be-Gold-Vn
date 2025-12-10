@@ -128,8 +128,8 @@ exports.insertCrawledPricesWithDiffYesterday = async (items, table = DEFAULT_TAB
             let diff_yesterday_sell = 0;
 
             if (yesterday) {
-                diff_yesterday_buy  = (buy  - Number(yesterday.buy || 0)) / 100;
-                diff_yesterday_sell = (sell - Number(yesterday.sell || 0)) / 100;
+                diff_yesterday_buy  = (buy  - Number(yesterday.buy || 0));
+                diff_yesterday_sell = (sell - Number(yesterday.sell || 0));
             }
 
             // Placeholder theo index

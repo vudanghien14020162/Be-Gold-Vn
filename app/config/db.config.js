@@ -23,4 +23,8 @@ module.exports = {
     PASSWORD_REDIS: process.env.DB_REDIS_PASSWORD,
     DB_REDIS: process.env.DB_REDIS_DB,
     DB_QUEUE_REDIS: process.env.DB_QUEUE_REDIS_DB,
+
+    ENABLE_MONGODB: process.env.DB_MONGODB_ENABLE,
+    DB_MONGODB_URI: process.env.DB_MONGODB_URI,
+    DB_MONGODB_NAME: process.env.DB_MONGODB_NAME,
 };

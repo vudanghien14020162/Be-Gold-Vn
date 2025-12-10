@@ -27,12 +27,18 @@ const BRAND_CONFIG = {
     NGOC_THAM: { table: 'log_crawl_ngoc_tham',  companyId: COMPANY_NGOC_THAM },
 };
 
+//
+// const RANGE_CONFIG = {
+//     "7d":  "DATE_SUB(CURDATE(), INTERVAL 7 DAY)",
+//     "1m":  "DATE_SUB(CURDATE(), INTERVAL 1 MONTH)",
+//     "3m":  "DATE_SUB(CURDATE(), INTERVAL 3 MONTH)",
+// };
 const RANGE_CONFIG = {
-    "7d":  "DATE_SUB(CURDATE(), INTERVAL 7 DAY)",
-    "1m":  "DATE_SUB(CURDATE(), INTERVAL 1 MONTH)",
-    "3m":  "DATE_SUB(CURDATE(), INTERVAL 3 MONTH)",
+    "7d":  7,
+    "15d": 15,
+    "1m":  30,
+    "3m":  3 * 30,
 };
-
 const COMPANY_MULTIPLIER = {
     1: 1000, // SJC: dữ liệu gốc đơn vị nghìn/chỉ -> nhân 1000 để ra đồng
     2: 1000, // DOJI: nếu cũng là nghìn
@@ -189,36 +195,51 @@ function normalizePriceForApi(rawValue, companyId) {
 }
 exports.getDataPagePrice = async function getDataPagePrice() {
     const sql = `
-        SELECT 
-            gp.*,
-            c.name company_name,
-            c.content company_content
-        FROM gold_price AS gp
-        JOIN company AS c 
-            ON gp.company_id = c.id
-        JOIN (
-            SELECT 
-                company_id,
-                MAX(
-                    CASE
-                        WHEN last_update LIKE '%:%:% %'
-                            THEN STR_TO_DATE(last_update, '%H:%i:%s %d/%m/%Y')
-                        ELSE STR_TO_DATE(last_update, '%H:%i %d/%m/%Y')
-                    END
-                ) AS max_last_update
-            FROM gold_price
-            GROUP BY company_id
+        SELECT
+            t.*,
+            c.name   AS company_name,
+            c.content AS company_content
+        FROM (
+            SELECT
+                gp.*,
+                ROW_NUMBER() OVER (
+                    PARTITION BY gp.company_id, gp.name, gp.area
+                    ORDER BY gp.date_sync DESC
+                ) AS rn
+            FROM gold_price gp
+            WHERE gp.company_id IN (1,2,3,4,5,6,7,8)
         ) AS t
-            ON gp.company_id = t.company_id
-           AND (
-                CASE
-                    WHEN gp.last_update LIKE '%:%:% %'
-                        THEN STR_TO_DATE(gp.last_update, '%H:%i:%s %d/%m/%Y')
-                    ELSE STR_TO_DATE(gp.last_update, '%H:%i %d/%m/%Y')
-                END
-           ) = t.max_last_update
-        ORDER BY c.id, gp.id;
+        JOIN company c
+            ON t.company_id = c.id
+        WHERE t.rn = 1
+        ORDER BY c.id, t.id;
     `;
+
+    // const sql = `
+    //     SELECT
+    //         t.*,
+    //         c.name   AS company_name,
+    //         c.content AS company_content
+    //     FROM (
+    //              SELECT
+    //                  gp.*,
+    //                  ROW_NUMBER() OVER (
+    //         PARTITION BY gp.company_id, gp.name, gp.area
+    //         ORDER BY
+    //             CASE
+    //                 WHEN gp.last_update LIKE '%:%:% %'
+    //                     THEN STR_TO_DATE(gp.last_update, '%H:%i:%s %d/%m/%Y')
+    //                 ELSE STR_TO_DATE(gp.last_update, '%H:%i %d/%m/%Y')
+    //             END DESC
+    //     ) AS rn
+    //              FROM gold_price gp
+    //              WHERE company_id IN (1, 2, 3, 4, 5,6, 7, 8)
+    //          ) AS t
+    //              JOIN company c
+    //                   ON t.company_id = c.id
+    //     WHERE t.rn = 1
+    //     order by c.id, t.id
+    // `;
 
     // return await sequelize.query(sql, { type: QueryTypes.SELECT });
 
@@ -271,6 +292,90 @@ exports.getDataPagePrice = async function getDataPagePrice() {
 
 }
 
+// exports.getDataPagePrice = async function getDataPagePrice() {
+//     const sql = `
+//         SELECT
+//             gp.*,
+//             c.name company_name,
+//             c.content company_content
+//         FROM gold_price AS gp
+//         JOIN company AS c
+//             ON gp.company_id = c.id
+//         JOIN (
+//             SELECT
+//                 company_id,
+//                 MAX(
+//                     CASE
+//                         WHEN last_update LIKE '%:%:% %'
+//                             THEN STR_TO_DATE(last_update, '%H:%i:%s %d/%m/%Y')
+//                         ELSE STR_TO_DATE(last_update, '%H:%i %d/%m/%Y')
+//                     END
+//                 ) AS max_last_update
+//             FROM gold_price
+//             GROUP BY company_id
+//         ) AS t
+//             ON gp.company_id = t.company_id
+//            AND (
+//                 CASE
+//                     WHEN gp.last_update LIKE '%:%:% %'
+//                         THEN STR_TO_DATE(gp.last_update, '%H:%i:%s %d/%m/%Y')
+//                     ELSE STR_TO_DATE(gp.last_update, '%H:%i %d/%m/%Y')
+//                 END
+//            ) = t.max_last_update
+//         ORDER BY c.id, gp.id;
+//     `;
+//
+//     // return await sequelize.query(sql, { type: QueryTypes.SELECT });
+//
+//     const [result] = await sequelize.query(
+//             sql,
+//             {type: sequelize.SELECT}
+//     );
+//     if(result.length > 0){
+//         // === GROUP THEO COMPANY ===
+//         const map = {};
+//         for (const row of result) {
+//             const compId = row.company_id;
+//
+//             if (!map[compId]) {
+//                 map[compId] = {
+//                     company_id: compId,
+//                     company_name: row.company_name + " | " + row.company_content,
+//                     items: []
+//                 };
+//             }
+//
+//             // Chuẩn hoá buy/sell → đồng → "xx.xxx.xxx"
+//             // Chuẩn hoá buy/sell → đồng → "xx.xxx.xxx"
+//             const buyStr  = normalizeMoney(row.buy ?? row.buy_raw, compId);
+//             const sellStr = normalizeMoney(row.sell ?? row.sell_raw, compId);
+//
+//             // const diffBuyStr  = formatVnd(toDongFromAny(row.diff_yesterday_buy, compId));
+//             // const diffSellStr = formatVnd(toDongFromAny(row.diff_yesterday_sell, compId));
+//             const diff_yesterday_buy  = row.diff_yesterday_buy;
+//             const diff_yesterday_sell = row.diff_yesterday_sell;
+//
+//             map[compId].items.push({
+//                 id: row.id,
+//                 name: row.name,
+//                 area: row.area,
+//                 companyId: compId,
+//                 buy: buyStr,
+//                 sell: sellStr,
+//                 // buy_raw: diffBuyStr,
+//                 // sell_raw: diffSellStr,
+//                 diff_yesterday_buy: diff_yesterday_buy,
+//                 diff_yesterday_sell: diff_yesterday_sell,
+//                 last_update: row.last_update,
+//                 date_sync: moment.tz(row.date_sync, 'Asia/Ho_Chi_Minh').utc().format('YYYY-MM-DD HH:mm:ss')
+//             });
+//         }
+//         return Object.values(map);
+//     }
+//     return [];
+//
+// }
+
 exports.getDateSyncTime = async () => {
     try {
         const result = await sequelize.query(
@@ -294,32 +399,86 @@ exports.getDateSyncTime = async () => {
 };
 
 
-function buildLatestTypeSql(tableName) {
+// function buildLatestTypeSql(tableName) {
+//     return `
+//         SELECT *
+//         FROM (
+//             SELECT
+//                 id,
+//                 name,
+//                 area,
+//                 buy,
+//                 sell,
+//                 buy_raw,
+//                 sell_raw,
+//                 date,
+//                 source,
+//                 last_update,
+//                 company_id,
+//                 diff_yesterday_buy,
+//                 diff_yesterday_sell,
+//                 ROW_NUMBER() OVER (
+//                     PARTITION BY name, area
+//                     ORDER BY date DESC
+//                 ) AS rn
+//             FROM ${tableName}
+//         ) x
+//         WHERE x.rn = 1
+//         ORDER BY x.id ASC;
+//     `;
+// }
+
+
+function buildLatestTypeSql() {
+    // return `
+    //     SELECT
+    //         gp.*
+    //     FROM gold_price AS gp
+    //     JOIN (
+    //         SELECT
+    //             company_id,
+    //             MAX(
+    //                 CASE
+    //                     WHEN last_update LIKE '%:%:% %'
+    //                         THEN STR_TO_DATE(last_update, '%H:%i:%s %d/%m/%Y')
+    //                     ELSE STR_TO_DATE(last_update, '%H:%i %d/%m/%Y')
+    //                 END
+    //             ) AS max_last_update
+    //         FROM gold_price
+    //         WHERE company_id = :companyId      -- 🔍 chỉ tìm trong đúng companyId
+    //         GROUP BY company_id
+    //     ) AS t
+    //         ON gp.company_id = t.company_id
+    //        AND (
+    //             CASE
+    //                 WHEN gp.last_update LIKE '%:%:% %'
+    //                     THEN STR_TO_DATE(gp.last_update, '%H:%i:%s %d/%m/%Y')
+    //                 ELSE STR_TO_DATE(gp.last_update, '%H:%i %d/%m/%Y')
+    //             END
+    //        ) = t.max_last_update
+    //     WHERE gp.company_id = :companyId       -- lọc đúng công ty
+    //     ORDER BY gp.id ASC;
+    // `;
+
     return `
-        SELECT *
+        SELECT
+            t.*,
+            c.name   AS company_name,
+            c.content AS company_content
         FROM (
             SELECT
-                id,
-                name,
-                area,
-                buy,
-                sell,
-                buy_raw,
-                sell_raw,
-                date,
-                source,
-                last_update,
-                company_id,
-                diff_yesterday_buy,
-                diff_yesterday_sell,
+                gp.*,
                 ROW_NUMBER() OVER (
-                    PARTITION BY name, area
-                    ORDER BY date DESC
+                    PARTITION BY gp.company_id, gp.name, gp.area
+                    ORDER BY gp.date_sync DESC
                 ) AS rn
-            FROM ${tableName}
-        ) x
-        WHERE x.rn = 1
-        ORDER BY x.id ASC;
+            FROM gold_price gp
+            WHERE gp.company_id = :companyId
+        ) AS t
+        JOIN company c
+            ON t.company_id = c.id
+        WHERE t.rn = 1
+        ORDER BY c.id, t.id;
     `;
 }
 
@@ -389,9 +548,11 @@ exports.getAllTypeGoldByCompany = async (companyId) => {
             console.log("❌ Không tìm thấy companyId:", companyId);
             return [];
         }
-        const sql = buildLatestTypeSql(brand.table);
+        // const sql = buildLatestTypeSql(brand.table);
+        const sql = buildLatestTypeSql();
         const rows = await sequelize.query(sql, {
             type: sequelize.QueryTypes.SELECT,
+            replacements: { companyId },
         });
         return rows;
     } catch (e) {
@@ -471,11 +632,56 @@ exports.getPriceByType = async (companyId, name, area) => {
     }
 };
 
-
+// function buildHistorySql(tableName, rangeExpr) {
+//     return `
+//         SELECT *
+//         FROM (
+//             SELECT
+//                 id,
+//                 company_id,
+//                 name,
+//                 area,
+//                 buy,
+//                 sell,
+//                 buy_raw,
+//                 sell_raw,
+//                 \`date\`,
+//                 source,
+//                 last_update,
+//                 diff_yesterday_buy,
+//                 diff_yesterday_sell,
+//                 ROW_NUMBER() OVER (
+//                     PARTITION BY DATE(\`date\`)
+//                     ORDER BY \`date\` DESC
+//                 ) AS rn
+//             FROM ${tableName}
+//             WHERE company_id = :companyId
+//               AND name = :name
+//               AND area = :area
+//               AND \`date\` >= ${rangeExpr}
+//         ) t
+//         WHERE t.rn = 1
+//         ORDER BY t.\`date\` ASC;
+//     `;
+// }
 
 function buildHistorySql(tableName, rangeExpr) {
+    // rangeExpr bây giờ là SỐ NGÀY cần lấy (7, 30, 90...)
     return `
-        SELECT *
+        SELECT
+            id,
+            company_id,
+            name,
+            area,
+            buy,
+            sell,
+            buy_raw,
+            sell_raw,
+            \`date\`,
+            source,
+            last_update,
+            diff_yesterday_buy,
+            diff_yesterday_sell
         FROM (
             SELECT
                 id,
@@ -491,22 +697,28 @@ function buildHistorySql(tableName, rangeExpr) {
                 last_update,
                 diff_yesterday_buy,
                 diff_yesterday_sell,
+                -- bản ghi mới nhất trong từng ngày
                 ROW_NUMBER() OVER (
                     PARTITION BY DATE(\`date\`)
                     ORDER BY \`date\` DESC
-                ) AS rn
+                ) AS rn,
+
+                -- rank theo NGÀY (ngày mới nhất = 1, kế = 2, ...)
+                DENSE_RANK() OVER (
+                    ORDER BY DATE(\`date\`) DESC
+                ) AS d_rank
             FROM ${tableName}
             WHERE company_id = :companyId
-              AND name = :name
-              AND area = :area
-              AND \`date\` >= ${rangeExpr}
+              AND name       = :name
+              AND area       = :area
         ) t
-        WHERE t.rn = 1
-        ORDER BY t.\`date\` ASC;
+        WHERE t.rn = 1              -- mỗi ngày 1 dòng mới nhất
+          AND t.d_rank <= ${rangeExpr}  -- đúng số ngày truyền lên, không kể ngày bắt đầu
+        ORDER BY t.\`date\` ASC;    -- cho chart: thời gian từ cũ → mới
     `;
 }
 
-exports.getHistoryByDate = async (companyId, name, area, range = "7d") => {
+exports.getHistoryByDate = async (companyId, name, area, range = '7d') => {
     try {
         // 1) Tìm brand theo companyId
         const brand = Object.values(BRAND_CONFIG).find(

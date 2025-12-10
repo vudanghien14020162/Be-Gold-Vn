@@ -18,6 +18,7 @@
   "license": "ISC",
   "dependencies": {
     "@maxmind/geoip2-node": "^3.4.0",
+    "amqplib": "^0.10.9",
     "async": "^3.2.4",
     "axios": "^0.27.2",
     "bcryptjs": "^2.4.3",
@@ -35,6 +36,7 @@
     "md5": "^2.3.0",
     "md5-base64": "0.0.3",
     "moment": "^2.30.1",
+    "mongodb": "^5.9.2",
     "mysql2": "^2.0.2",
     "node-tls-client": "^2.1.0",
     "puppeteer": "^24.31.0",

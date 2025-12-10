@@ -5,6 +5,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+if (process.env.DB_MONGODB_ENABLE && parseInt(process.env.DB_MONGODB_ENABLE) === 1) {
+    const { connectMongo } = require("./app/config/mongo");
+    (async () => {
+        await connectMongo();
+        console.log("🚀 Atlas MongoDB READY → Starting API + Queues...");
+    })();
+}
+
 app.use((req, res, next) => {
     res.setHeader('Content-Type', 'application/json');
     next();

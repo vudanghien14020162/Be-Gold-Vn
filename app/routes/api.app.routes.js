@@ -2,6 +2,7 @@
 const gold   = require("../controllers/app/gold.controller");
 const gold_mongo   = require("../controllers/app/gold_mongo.controller");
 const news_controller   = require("../controllers/app/news.controller");
+const post_thread_controller   = require("../controllers/app/post_thread.controller");
 const router            = require("express").Router();
 
 module.exports = app => {
@@ -13,7 +14,7 @@ module.exports = app => {
     // router.get('/api/getGoldCrawlBTMH', gold.btmhCrawl);
     // router.get('/api/getGoldCrawlSJC', gold.crawlSjc);
     // router.get('/api/getGoldCrawlPNJ', gold.crawlPNJ);
-    router.get('/api/getGoldCrawlBTMC', gold.crawlBTMC);
+    // router.get('/api/getGoldCrawlBTMC', gold.crawlBTMC);
     // router.get('/api/getGoldCrawlPhuQuy', gold.crawlPhuQuy);
     // router.get('/api/getGoldCrawlMiHong', gold.crawlMiHong);
     // router.get('/api/getGoldCrawlNgocTham', gold.crawlNgocTham);
@@ -72,6 +73,7 @@ module.exports = app => {
     // router.get('/api/getHistoryByDate/:id/:name/:area/:history_date', gold_mongo.getHistoryByDate);
     // router.get('/api/getNewsHome/', news_controller.getNewsHomePage);
 
-
+    //api đăng thread
+    router.get('/api/postThreadAccount', post_thread_controller.postThreadAccount);
     app.use('/', router);
 };

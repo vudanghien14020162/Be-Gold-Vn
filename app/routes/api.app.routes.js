@@ -13,7 +13,7 @@ module.exports = app => {
     // router.get('/api/getGoldCrawlBTMH', gold.btmhCrawl);
     // router.get('/api/getGoldCrawlSJC', gold.crawlSjc);
     // router.get('/api/getGoldCrawlPNJ', gold.crawlPNJ);
-    // router.get('/api/getGoldCrawlBTMC', gold.crawlBTMC);
+    router.get('/api/getGoldCrawlBTMC', gold.crawlBTMC);
     // router.get('/api/getGoldCrawlPhuQuy', gold.crawlPhuQuy);
     // router.get('/api/getGoldCrawlMiHong', gold.crawlMiHong);
     // router.get('/api/getGoldCrawlNgocTham', gold.crawlNgocTham);

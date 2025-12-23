@@ -1,4 +1,4 @@
-// fetch_giavang_org_btmc.js
+// btmc_crawl.helper.js
 // Lấy dữ liệu giá vàng Bảo Tín Minh Châu (BTMC) từ https://giavang.org/trong-nuoc/bao-tin-minh-chau/
 
 const axios = require("axios");

@@ -7,6 +7,11 @@ const Sequelize = require("sequelize");
 const sequelize = new Sequelize(dbConfig.MYSQL_DB, null, null, {
     dialect: dbConfig.dialect,
     port: 3306,
+    timezone: '+07:00',
+    dialectOptions: {
+        dateStrings: true,
+        typeCast: true,
+    },
     username: dbConfig.MYSQL_USER,
     password: dbConfig.MYSQL_PASSWORD,
     replication: {

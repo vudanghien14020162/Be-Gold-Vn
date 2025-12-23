@@ -1,0 +1,66 @@
+[
+  {
+    "id": 1,
+    "name": "SJC",
+    "content": "VÀNG BẠC ĐÁ QUÝ SÀI GÒN",
+    "icon": "https://sjc.com.vn/Data/Sites/1/media/img/logo.png",
+    "status": 1,
+    "deleted": 0
+  },
+  {
+    "id": 2,
+    "name": "DOJI",
+    "content": "TRANG SỨC DOJI",
+    "icon": "https://doji.vn/wp-content/themes/main/assets/images/home/logo.png",
+    "status": 1,
+    "deleted": 0
+  },
+  {
+    "id": 3,
+    "name": "PNJ",
+    "content": "VÀNG BẠC ĐÁ QUÝ PHÚ NHUẬN",
+    "icon": "https://cdn.pnj.io/images/logo/pnj.com.vn.png",
+    "status": 1,
+    "deleted": 0
+  },
+  {
+    "id": 4,
+    "name": "BTMC",
+    "content": "BẢO TÍN MINH CHÂU",
+    "icon": "https://btmc.vn/Content/Home/images/logo.png",
+    "status": 1,
+    "deleted": 0
+  },
+  {
+    "id": 5,
+    "name": "BTMH",
+    "content": "BẢO TÍN MINH HẢI",
+    "icon": "https://baotinmanhhai.vn/upload/setting/thumb_350x0/website-logo-img-1760429337.png",
+    "status": 1,
+    "deleted": 0
+  },
+  {
+    "id": 6,
+    "name": "Phú Quý",
+    "content": "VÀNG BẠC ĐÁ QUÝ PHÚ QUÝ",
+    "icon": "https://theme.hstatic.net/200000061680/1000549213/14/logo.png?v=1390",
+    "status": 1,
+    "deleted": 0
+  },
+  {
+    "id": 7,
+    "name": "Mi Hồng",
+    "content": "VÀNG BẠC ĐÁ QUÝ MI HỒNG",
+    "icon": "https://cdn.brandfetch.io/ideEpNaCaf/w/900/h/900/theme/dark/icon.jpeg?c=1bxid64Mup7aczewSAYMX&t=1760283072189",
+    "status": 1,
+    "deleted": 0
+  },
+  {
+    "id": 8,
+    "name": "Ngọc Thẩm",
+    "content": "VÀNG BẠC ĐÁ QUÝ NGỌC THẨM",
+    "icon": "https://cdn.brandfetch.io/idzilE1yoK/w/1159/h/1159/theme/dark/icon.jpeg?c=1bxid64Mup7aczewSAYMX&t=1761504873142",
+    "status": 1,
+    "deleted": 0
+  }
+]

@@ -2,7 +2,7 @@
 
 const app = require("../config/app");           // dùng redisClient hiện có
 const { getChannel, assertQueue } = require("../config/rabbit");
-
+const { v4: uuidv4 } = require("uuid");
 const BRANDS = [
     "SJC",
     "DOJI",
@@ -18,7 +18,8 @@ const BRAND_QUEUE_NAME = "queue_brand_jobs";   // 1 queue duy nhất
 const FINAL_QUEUE_NAME = "queue_sync_all";
 
 async function createSyncBatchRabbit() {
-    const batchId = Date.now().toString(); // hoặc uuid
+    const batchId = uuidv4(); // vd: "d4a7a23e-1f0c-4c53-9c2e-9a8f52a1b3cd"
+    // const batchId = Date.now().toString(); // hoặc uuid
 
     const remainingKey = `batch:${batchId}:remaining`;
     await app.redisClient.set(remainingKey, BRANDS.length.toString());

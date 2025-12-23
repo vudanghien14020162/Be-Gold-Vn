@@ -56,7 +56,7 @@ exports.getYesterdayLastPrices = async (table = DEFAULT_TABLE) => {
         // const yesterday = moment().subtract(1, "day").format("YYYY-MM-DD");
         const rows = await sequelize.query(
             `
-            SELECT DISTINCT t.*
+            SELECT t.*
             FROM ${table} AS t
             INNER JOIN (
                 SELECT name, area, MAX(date) AS max_date
@@ -134,7 +134,7 @@ exports.insertCrawledPricesWithDiffYesterday = async (items, table = DEFAULT_TAB
 
             // Placeholder theo index
             valuesSql.push(
-                `(:name${idx}, :buy_raw${idx}, :sell_raw${idx}, :buy${idx}, :sell${idx}, NOW(), :source${idx}, :last_update${idx}, :area${idx}, :company_id${idx}, :diffYBuy${idx}, :diffYSell${idx})`
+                `(:name${idx}, :buy_raw${idx}, :sell_raw${idx}, :buy${idx}, :sell${idx}, UTC_TIMESTAMP() + INTERVAL 7 HOUR, :source${idx}, :last_update${idx}, :area${idx}, :company_id${idx}, :diffYBuy${idx}, :diffYSell${idx})`
             );
 
             // Gán values

@@ -283,7 +283,7 @@ exports.getDataPagePrice = async function getDataPagePrice() {
                 diff_yesterday_buy: diff_yesterday_buy,
                 diff_yesterday_sell: diff_yesterday_sell,
                 last_update: row.last_update,
-                date_sync: moment.tz(row.date_sync, 'Asia/Ho_Chi_Minh').utc().format('YYYY-MM-DD HH:mm:ss')
+                date_sync: moment(row.date_sync).format('YYYY-MM-DD HH:mm:ss')
             });
         }
         return Object.values(map);
@@ -386,7 +386,7 @@ exports.getDateSyncTime = async () => {
 
         let data = null;
         if(result && result.length > 0){
-            data = moment(result[0].date_sync).subtract(7, "hours").format("YYYY-MM-DD HH:mm:ss");
+            data = moment(result[0].date_sync).format("DD-MM-YYYY HH:mm:ss");
         }else{
             return null;
         }

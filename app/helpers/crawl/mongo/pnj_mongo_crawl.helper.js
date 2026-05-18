@@ -4,7 +4,7 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 const moment = require("moment");
-const pnj_gold_helper = require("./pnj_mongo_gold.helper"); // sửa path cho đúng
+const pnj_gold_helper = require("../../mongo/pnj_mongo_gold.helper"); // sửa path cho đúng
 
 const URL = "https://giavang.org/trong-nuoc/pnj/";
 

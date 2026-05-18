@@ -59,13 +59,13 @@ redisClient.connect();
 
 // ================== MONGODB (Atlas) ==================
 
-// //connect to mongodb
-// const { connectMongo } = require("./mongo");
-//
-// (async () => {
-//     await connectMongo();
-//     console.log("Mongo OK, starting server...");
-// })();
+//connect to mongodb
+const { connectMongo } = require("./mongo");
+
+(async () => {
+    await connectMongo();
+    console.log("Mongo OK, starting server...");
+})();
 
 
 // ================== QUEUE ==================

@@ -1,12 +1,12 @@
-// ngoc_tham_mongo_crawl.helper.js
-// Lấy dữ liệu giá vàng Ngọc Thẩm từ https://giavang.org/trong-nuoc/ngoc-tham/
+// fetch_giavang_org_mihong.js
+// Lấy dữ liệu giá vàng Mi Hồng từ https://giavang.org/trong-nuoc/mi-hong/
 
 const axios = require("axios");
 const cheerio = require("cheerio");
 const moment = require("moment");
-const ngoc_tham_gold_helper = require("./ngoc_tham_mongo_gold.helper"); // helper Mongo cho Ngọc Thẩm
+const mihong_gold_helper = require("../../mongo/mi_hong_mongo_gold.helper"); // helper Mongo cho Mi Hồng
 
-const URL = "https://giavang.org/trong-nuoc/ngoc-tham/";
+const URL = "https://giavang.org/trong-nuoc/mi-hong/";
 
 /**
  * Chuẩn hoá giá từ giavang.org:
@@ -30,8 +30,8 @@ function normalizePriceFromGiaVangOrg(cellText) {
     return dongPerChi;
 }
 
-exports.fetchGiavangOrgNgocTham = async function fetchGiavangOrgNgocTham() {
-    // 1) Gọi trang giavang.org (Ngọc Thẩm)
+exports.fetchGiavangOrgMiHong = async function fetchGiavangOrgMiHong() {
+    // 1) Gọi trang giavang.org (Mi Hồng)
     const res = await axios.get(URL, {
         timeout: 20000,
         headers: {
@@ -66,13 +66,13 @@ exports.fetchGiavangOrgNgocTham = async function fetchGiavangOrgNgocTham() {
     }
 
     // 3) So với DB – nếu không có dữ liệu mới thì thôi
-    const last_update_db = await ngoc_tham_gold_helper.getLastUpdateTime();
+    const last_update_db = await mihong_gold_helper.getLastUpdateTime();
 
-    console.log("[NGOC_THAM] last_update trang   :", last_update);
-    console.log("[NGOC_THAM] last_update trong DB:", last_update_db);
+    console.log("[MIHONG] last_update trang   :", last_update);
+    console.log("[MIHONG] last_update trong DB:", last_update_db);
 
     if (last_update && last_update_db && last_update === last_update_db) {
-        console.log("[NGOC_THAM] last_update trùng DB, không crawl thêm.");
+        console.log("[MIHONG] last_update trùng DB, không crawl thêm.");
         return [];
     }
 
@@ -80,7 +80,7 @@ exports.fetchGiavangOrgNgocTham = async function fetchGiavangOrgNgocTham() {
     let table = $("table").first();
 
     if (!table || !table.length) {
-        console.log("❌ [NGOC_THAM] Không tìm thấy bảng <table> trên trang.");
+        console.log("❌ [MIHONG] Không tìm thấy bảng <table> trên trang.");
         return [];
     }
 
@@ -90,7 +90,7 @@ exports.fetchGiavangOrgNgocTham = async function fetchGiavangOrgNgocTham() {
         rows = table.find("tr");
     }
 
-    console.log("[NGOC_THAM] Số <tr> trong bảng:", rows.length);
+    console.log("[MIHONG] Số <tr> trong bảng:", rows.length);
 
     const items = [];
 
@@ -116,7 +116,7 @@ exports.fetchGiavangOrgNgocTham = async function fetchGiavangOrgNgocTham() {
 
         if (cells.length < 3) {
             console.log(
-                `[NGOC_THAM] Row ${index} bỏ qua, cells.length = ${cells.length}, text =`,
+                `[MIHONG] Row ${index} bỏ qua, cells.length = ${cells.length}, text =`,
                 rowText
             );
             return;
@@ -129,7 +129,7 @@ exports.fetchGiavangOrgNgocTham = async function fetchGiavangOrgNgocTham() {
         const buy = normalizePriceFromGiaVangOrg(buy_raw);
         const sell = normalizePriceFromGiaVangOrg(sell_raw);
 
-        // Ngọc Thẩm trên giavang.org không chia khu vực → tạm đặt "Toàn quốc"
+        // Mi Hồng không chia khu vực, tạm đặt area = "Toàn quốc"
         const area = "Toàn quốc";
 
         items.push({
@@ -145,26 +145,26 @@ exports.fetchGiavangOrgNgocTham = async function fetchGiavangOrgNgocTham() {
         });
     });
 
-    console.log("[NGOC_THAM] Tổng items lấy được:", items.length);
+    console.log("[MIHONG] Tổng items lấy được:", items.length);
     console.log(
-        "[NGOC_THAM] Thống kê theo area:",
+        "[MIHONG] Thống kê theo area:",
         items.reduce((acc, it) => {
             acc[it.area] = (acc[it.area] || 0) + 1;
             return acc;
         }, {})
     );
 
-    // 5) Ghi vào MongoDB (log + diff hôm qua)
+    // // 5) Ghi vào MongoDB (log + diff hôm qua)
     // if (items.length) {
     //     try {
     //         const inserted =
-    //             await ngoc_tham_gold_helper.insertCrawledPricesWithDiffYesterday(items);
-    //         console.log("[NGOC_THAM] Đã insert vào Mongo (Ngọc Thẩm):", inserted);
+    //             await mihong_gold_helper.insertCrawledPricesWithDiffYesterday(items);
+    //         console.log("[MIHONG] Đã insert vào Mongo (Mi Hồng):", inserted);
     //     } catch (e) {
-    //         console.log("[NGOC_THAM] Lỗi insert Mongo:", e);
+    //         console.log("[MIHONG] Lỗi insert Mongo:", e);
     //     }
     // }
 
-    // vẫn return items nếu chỗ khác còn dùng
+    // vẫn return items nếu chỗ khác cần dùng
     return items;
 };

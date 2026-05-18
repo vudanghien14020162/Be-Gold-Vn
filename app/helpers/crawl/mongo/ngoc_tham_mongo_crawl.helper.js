@@ -1,12 +1,12 @@
-// app/helpers/crawl/fetch_giavang_org_doji.js
-// Lấy dữ liệu giá vàng DOJI từ https://giavang.org/trong-nuoc/doji/
+// ngoc_tham_mongo_crawl.helper.js
+// Lấy dữ liệu giá vàng Ngọc Thẩm từ https://giavang.org/trong-nuoc/ngoc-tham/
 
 const axios = require("axios");
 const cheerio = require("cheerio");
 const moment = require("moment");
-const doji_gold_helper = require("./doji_mongo_gold.helper"); // helper Mongo cho DOJI
+const ngoc_tham_gold_helper = require("../../mongo/ngoc_tham_mongo_gold.helper"); // helper Mongo cho Ngọc Thẩm
 
-const URL = "https://giavang.org/trong-nuoc/doji/";
+const URL = "https://giavang.org/trong-nuoc/ngoc-tham/";
 
 /**
  * Chuẩn hoá giá từ giavang.org:
@@ -15,7 +15,7 @@ const URL = "https://giavang.org/trong-nuoc/doji/";
  *
  * Logic: 152.900 (nghìn/lượng)
  *   -> 152900 * 1000 = 152.900.000 đồng / lượng
- *   -> /10 chỉ = 15.290.000 đồng / chỉ
+ *   -> /10 chỉ  = 15.290.000 đồng / chỉ
  *   => nhân 100: 152900 * 100 = 15.290.000
  */
 function normalizePriceFromGiaVangOrg(cellText) {
@@ -30,8 +30,8 @@ function normalizePriceFromGiaVangOrg(cellText) {
     return dongPerChi;
 }
 
-exports.fetchGiavangOrgDOJI = async function fetchGiavangOrgDOJI() {
-    // 1) Gọi trang giavang.org (DOJI)
+exports.fetchGiavangOrgNgocTham = async function fetchGiavangOrgNgocTham() {
+    // 1) Gọi trang giavang.org (Ngọc Thẩm)
     const res = await axios.get(URL, {
         timeout: 20000,
         headers: {
@@ -44,7 +44,7 @@ exports.fetchGiavangOrgDOJI = async function fetchGiavangOrgDOJI() {
 
     const $ = cheerio.load(res.data);
 
-    // 2) Lấy thời gian cập nhật: "Cập nhật lúc 16:55:02 27/11/2025"
+    // 2) Lấy thời gian cập nhật: "Cập nhật lúc 16:50:05 27/11/2025"
     let last_update = "";
     let textWithUpdate = "";
 
@@ -61,18 +61,18 @@ exports.fetchGiavangOrgDOJI = async function fetchGiavangOrgDOJI() {
             /Cập nhật lúc\s*([0-9:]+\s+\d{2}\/\d{2}\/\d{4})/
         );
         if (m) {
-            last_update = m[1].trim(); // "16:55:02 27/11/2025"
+            last_update = m[1].trim(); // "16:50:05 27/11/2025"
         }
     }
 
     // 3) So với DB – nếu không có dữ liệu mới thì thôi
-    const last_update_db = await doji_gold_helper.getLastUpdateTime();
+    const last_update_db = await ngoc_tham_gold_helper.getLastUpdateTime();
 
-    console.log("[DOJI] last_update trang   :", last_update);
-    console.log("[DOJI] last_update trong DB:", last_update_db);
+    console.log("[NGOC_THAM] last_update trang   :", last_update);
+    console.log("[NGOC_THAM] last_update trong DB:", last_update_db);
 
     if (last_update && last_update_db && last_update === last_update_db) {
-        console.log("[DOJI] last_update trùng DB, không crawl thêm.");
+        console.log("[NGOC_THAM] last_update trùng DB, không crawl thêm.");
         return [];
     }
 
@@ -80,7 +80,7 @@ exports.fetchGiavangOrgDOJI = async function fetchGiavangOrgDOJI() {
     let table = $("table").first();
 
     if (!table || !table.length) {
-        console.log("❌ [DOJI] Không tìm thấy bảng <table> trên trang.");
+        console.log("❌ [NGOC_THAM] Không tìm thấy bảng <table> trên trang.");
         return [];
     }
 
@@ -90,10 +90,9 @@ exports.fetchGiavangOrgDOJI = async function fetchGiavangOrgDOJI() {
         rows = table.find("tr");
     }
 
-    console.log("[DOJI] Số <tr> trong bảng:", rows.length);
+    console.log("[NGOC_THAM] Số <tr> trong bảng:", rows.length);
 
     const items = [];
-    let currentArea = ""; // để giữ khu vực cho các dòng không lặp lại area (rowspan)
 
     rows.each((index, row) => {
         const $row = $(row);
@@ -103,7 +102,6 @@ exports.fetchGiavangOrgDOJI = async function fetchGiavangOrgDOJI() {
 
         // Bỏ qua header hoặc các dòng ghi chú
         if (
-            /Khu vực/i.test(rowText) ||
             /Loại vàng/i.test(rowText) ||
             /Mua vào/i.test(rowText) ||
             /Bán ra/i.test(rowText) ||
@@ -118,58 +116,55 @@ exports.fetchGiavangOrgDOJI = async function fetchGiavangOrgDOJI() {
 
         if (cells.length < 3) {
             console.log(
-                `[DOJI] Row ${index} bỏ qua, cells.length = ${cells.length}, text =`,
+                `[NGOC_THAM] Row ${index} bỏ qua, cells.length = ${cells.length}, text =`,
                 rowText
             );
             return;
         }
 
-        let area = currentArea;
-        let typeText = "";
-        let buy_raw = "";
-        let sell_raw = "";
-
-        if (cells.length >= 4) {
-            // Dòng đầu của mỗi khu vực: có cả "Khu vực" + "Loại vàng"
-            area = cells.eq(0).text().trim();
-            typeText = cells.eq(1).text().trim();
-            buy_raw = cells.eq(2).text().trim();
-            sell_raw = cells.eq(3).text().trim();
-            currentArea = area; // cập nhật khu vực hiện tại
-        } else {
-            // Các dòng tiếp theo: chỉ còn "Loại vàng", "Mua vào", "Bán ra"
-            typeText = cells.eq(0).text().trim();
-            buy_raw = cells.eq(1).text().trim();
-            sell_raw = cells.eq(2).text().trim();
-            // area lấy lại từ currentArea
-        }
+        const type = cells.eq(0).text().trim();
+        const buy_raw = cells.eq(1).text().trim();
+        const sell_raw = cells.eq(2).text().trim();
 
         const buy = normalizePriceFromGiaVangOrg(buy_raw);
         const sell = normalizePriceFromGiaVangOrg(sell_raw);
 
+        // Ngọc Thẩm trên giavang.org không chia khu vực → tạm đặt "Toàn quốc"
+        const area = "Toàn quốc";
+
         items.push({
-            name: typeText,
-            area: area || "Không rõ",
+            name: type,
+            area,
             buy_raw,
             sell_raw,
             buy,
             sell,
-            // Lưu theo giờ VN, tuỳ server đang UTC hay không
             date: moment().add(7, "hours").format("YYYY-MM-DD HH:mm:ss"),
             source: URL,
             last_update,
         });
     });
 
-    console.log("[DOJI] Tổng items lấy được:", items.length);
+    console.log("[NGOC_THAM] Tổng items lấy được:", items.length);
     console.log(
-        "[DOJI] Thống kê theo area:",
+        "[NGOC_THAM] Thống kê theo area:",
         items.reduce((acc, it) => {
             acc[it.area] = (acc[it.area] || 0) + 1;
             return acc;
         }, {})
     );
 
-    // Vẫn return items nếu chỗ khác còn dùng
+    // 5) Ghi vào MongoDB (log + diff hôm qua)
+    // if (items.length) {
+    //     try {
+    //         const inserted =
+    //             await ngoc_tham_gold_helper.insertCrawledPricesWithDiffYesterday(items);
+    //         console.log("[NGOC_THAM] Đã insert vào Mongo (Ngọc Thẩm):", inserted);
+    //     } catch (e) {
+    //         console.log("[NGOC_THAM] Lỗi insert Mongo:", e);
+    //     }
+    // }
+
+    // vẫn return items nếu chỗ khác còn dùng
     return items;
 };

@@ -9,7 +9,7 @@ const queue_crawl_data_mi_hong       = app.queue_crawl_data_mi_hong;
 const queue_crawl_data_ngoc_tham       = app.queue_crawl_data_ngoc_tham;
 const queue_syn_all_data_crawl              = app.queue_syn_all_data_crawl;
 
-const crawl_gold        = require("../../helpers/mongo/crawl_gold_mongo.helper");
+const crawl_gold        = require("../../helpers/crawl/mongo/crawl_gold_mongo.helper");
 const common_response   = require("../../common/response");
 const {sendMessage}     = require("../../common/telegram");
 
@@ -29,7 +29,7 @@ exports.crawlBTMC = async function crawlBTMC(req, res, options = {}) {
         console.error(err);
         res.status(500).json({
             success: false,
-            message: 'Không lấy được dữ liệu giá vàng DOJI',
+            message: 'Không lấy được dữ liệu giá vàng BTMC',
         });
     }
 
@@ -37,19 +37,20 @@ exports.crawlBTMC = async function crawlBTMC(req, res, options = {}) {
 
 exports.btmhCrawl = async function btmhCrawl(req, res, options = {}) {
     try {
+        console.log("Bắt đầu crawl BTMH...");
         const data = await crawl_gold.crawlBTMH();
         res.json({
             success: true,
             data,
         });
-
+        console.log("Crawl BTMH xong, đã gửi response. Dữ liệu:", data);
         await queue_crawl_data_btmh.createJob({}).save();
 
     } catch (err) {
         console.error(err);
         res.status(500).json({
             success: false,
-            message: 'Không lấy được dữ liệu giá vàng DOJI',
+            message: 'Không lấy được dữ liệu giá vàng BTMH',
         });
     }
 
@@ -88,7 +89,7 @@ exports.crawlMiHong = async function crawlMiHong(req, res, options = {}) {
         console.error(err);
         res.status(500).json({
             success: false,
-            message: 'Không lấy được dữ liệu giá vàng DOJI',
+            message: 'Không lấy được dữ liệu giá vàng MIHONG',
         });
     }
 

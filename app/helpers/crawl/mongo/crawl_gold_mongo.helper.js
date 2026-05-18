@@ -1,11 +1,11 @@
-const crawlDataBTMHHelper                = require("./btmh_mongo_crawl.helper");
-const crawlDataBTMCHelper                = require("./btmc_mongo_crawl.helper");
-const crawlDataDOJIHelper                = require("./doji_mongo_crawl.helper");
-const crawlDataMiHongHelper                = require("./mi_hong_mongo_crawl.helper");
-const crawlDataNgocThamHelper                = require("./ngoc_tham_mongo_crawl.helper");
-const crawlDataPhuQuyHelper                = require("./phu_quy_mongo_crawl.helper");
-const crawlDataPNJHelper                = require("./pnj_mongo_crawl.helper");
-const crawlDataSJCHelper                = require("./sjc_mongo_crawl.helper");
+const crawlDataBTMHHelper                = require("../mongo/btmh_mongo_crawl.helper");
+const crawlDataBTMCHelper                = require("../mongo/btmc_mongo_crawl.helper");
+const crawlDataDOJIHelper                = require("../mongo/doji_mongo_crawl.helper");
+const crawlDataMiHongHelper                = require("../mongo/mi_hong_mongo_crawl.helper");
+const crawlDataNgocThamHelper                = require("../mongo/ngoc_tham_mongo_crawl.helper");
+const crawlDataPhuQuyHelper                = require("../mongo/phu_quy_mongo_crawl.helper");
+const crawlDataPNJHelper                = require("../mongo/pnj_mongo_crawl.helper");
+const crawlDataSJCHelper                = require("../mongo/sjc_mongo_crawl.helper");
 
 
 
@@ -14,7 +14,7 @@ exports.crawlBTMC = async function crawlBTMC() {
 }
 
 exports.crawlBTMH = async function crawlBTMH() {
-    return await crawlDataBTMHHelper.crawlDataBTMHHelper();
+    return await crawlDataBTMHHelper.fetchGiavangOrgBTMH();
 }
 
 exports.crawlDataDojiPrices = async function crawlBTMH() {

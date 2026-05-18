@@ -1,65 +1,123 @@
 // app/database/mongo.js
 require("dotenv").config();
+
 const { MongoClient } = require("mongodb");
 
 let client = null;
 let db = null;
-let _connecting = null;
+let connectingPromise = null;
+
+const uri = process.env.DB_MONGODB_URI;
+const dbName = process.env.DB_MONGODB_NAME || "gold_price_db";
 
 /**
- * Kết nối MongoDB (chỉ chạy đúng 1 lần)
+ * Kết nối MongoDB.
+ * Đảm bảo:
+ * - Chỉ connect 1 lần
+ * - Nếu nhiều nơi gọi cùng lúc thì dùng chung 1 promise
+ * - Nếu lỗi thì reset để lần sau retry
  */
 async function connectMongo() {
-    // Nếu đã có db → trả về luôn
-    if (db) return db;
+    if (db) {
+        return db;
+    }
 
-    // Nếu đang kết nối → chờ kết nối xong và trả về
-    if (_connecting) return _connecting;
+    if (connectingPromise) {
+        return connectingPromise;
+    }
 
-    const uri = process.env.DB_MONGODB_URI;
-    if (!uri) throw new Error("❌ Missing Mongo URI (DB_MONGODB_URI)");
+    if (!uri) {
+        throw new Error("❌ Missing Mongo URI: DB_MONGODB_URI");
+    }
 
-    console.log("⏳ Đang kết nối MongoDB...");
-
-    // Đánh dấu đang kết nối
-    _connecting = new Promise(async (resolve, reject) => {
+    connectingPromise = (async () => {
         try {
+            console.log("⏳ Đang kết nối MongoDB...");
+
             client = new MongoClient(uri, {
                 maxPoolSize: 20,
+                minPoolSize: 2,
                 connectTimeoutMS: 20000,
+                serverSelectionTimeoutMS: 20000,
+                socketTimeoutMS: 45000
             });
 
             await client.connect();
 
-            db = client.db(process.env.DB_MONGODB_NAME || "gold_price_db");
+            // kiểm tra kết nối thật
+            await client.db("admin").command({
+                ping: 1
+            });
 
-            console.log("✅ MongoDB connected:", process.env.DB_MONGODB_NAME);
+            db = client.db(dbName);
 
-            resolve(db);
+            console.log("✅ MongoDB connected:", dbName);
+
+            return db;
         } catch (err) {
-            console.error("❌ MongoDB connect error:", err);
-            reject(err);
-        } finally {
-            _connecting = null; // reset để retry lần sau nếu lỗi
-        }
-    });
+            client = null;
+            db = null;
 
-    return _connecting;
+            console.error("❌ MongoDB connect error:", err.message);
+
+            throw err;
+        } finally {
+            connectingPromise = null;
+        }
+    })();
+
+    return connectingPromise;
 }
 
 /**
- * Trả về DB đã connect (hoặc báo lỗi nếu chưa connect)
+ * Dùng khi chắc chắn app đã gọi await connectMongo()
  */
 function getDb() {
     if (!db) {
         throw new Error(
-            "❌ MongoDB chưa sẵn sàng! Hãy gọi connectMongo() trước khi dùng getDb()."
+            "❌ MongoDB chưa sẵn sàng. Hãy gọi await connectMongo() trước khi dùng getDb()."
         );
     }
+
     return db;
+}
+
+/**
+ * Dùng trong helper nếu muốn tự đảm bảo có DB.
+ */
+async function getDbAsync() {
+    if (db) {
+        return db;
+    }
+
+    return await connectMongo();
+}
+
+/**
+ * Lấy collection an toàn.
+ */
+async function getCollection(collectionName) {
+    const database = await getDbAsync();
+    return database.collection(collectionName);
+}
+
+/**
+ * Đóng kết nối khi app shutdown.
+ */
+async function closeMongo() {
+    if (client) {
+        await client.close();
+        client = null;
+        db = null;
+        connectingPromise = null;
+        console.log("🔌 MongoDB disconnected");
+    }
 }
 
 module.exports = {
     connectMongo,
     getDb,
+    getDbAsync,
+    getCollection,
+    closeMongo
 };

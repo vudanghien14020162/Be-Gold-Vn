@@ -17,6 +17,10 @@ const BRANDS = [
 const BRAND_QUEUE_NAME = "queue_brand_jobs";   // 1 queue duy nhất
 const FINAL_QUEUE_NAME = "queue_sync_all";
 
+
+//tạo batch sync brand
+// và gửi các job brand vào RabbitMQ
+// để worker xử lý song song
 async function createSyncBatchRabbit() {
     const batchId = uuidv4(); // vd: "d4a7a23e-1f0c-4c53-9c2e-9a8f52a1b3cd"
     // const batchId = Date.now().toString(); // hoặc uuid
@@ -38,7 +42,7 @@ async function createSyncBatchRabbit() {
         ch.sendToQueue(
             BRAND_QUEUE_NAME,
             Buffer.from(JSON.stringify(payload)),
-            { persistent: true }
+            { persistent: true } //message sẽ được lưu xuống disk
         );
 
         console.log("[syncBatchRabbit] Published job:", BRAND_QUEUE_NAME, payload);

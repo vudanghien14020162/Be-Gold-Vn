@@ -4,7 +4,7 @@ const cors = require("cors");
 const app = express();
 app.use(cors());
 process.env.TZ = "Asia/Ho_Chi_Minh";
-const PORT = 8890;
+const PORT = 8899;
 app.listen(PORT, () => {
   console.log(`Start Cron Job - POST: ${PORT}`);
 });

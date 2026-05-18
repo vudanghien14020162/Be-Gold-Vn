@@ -3,7 +3,7 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 const moment = require("moment");
-const sjc_gold_helper = require("./sjc_mongo_gold.helper"); // sửa path cho đúng
+const sjc_gold_helper = require("../../mongo/sjc_mongo_gold.helper"); // sửa path cho đúng
 
 const URL = "https://giavang.org/trong-nuoc/sjc/";
 

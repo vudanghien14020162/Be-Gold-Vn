@@ -1,5 +1,7 @@
-// gold_price_helper.js - MongoDB version (chuyển từ MySQL sang Mongo)
-
+// gold_price_helper.js
+const app = require("../config/app");
+const moment = require("moment");
+const cached_key = require("../common/cached_key");
 
 /**
  * Yêu cầu:
@@ -9,24 +11,10 @@
  * app.mongoDb = client.db("ten_database");
  */
 
-require('dotenv').config();
-const app                           = require("../../../app/config/app");
-const moment = require("moment");
-const { getDb } = require("../../config/mongo");
-
-// helpers/brandJob.helper.js
-
-// if (process.env.DB_MONGODB_ENABLE && parseInt(process.env.DB_MONGODB_ENABLE) === 1) {
-//     const { connectMongo } = require("../../../app/config/mongo");
-//     (async () => {
-//         await connectMongo();
-//         console.log("🚀 Atlas MongoDB READY → Starting API + Queues...");
-//     })();
-// }
-
+const db = app.mongoDb;
 
 // COLLECTION CHÍNH
-const GOLD_PRICE_COLLECTION = "gold_price";
+const GOLD_PRICE_COLLECTION = "gold_prices";
 const COMPANY_COLLECTION = "company";
 
 // COMPANY IDs
@@ -93,6 +81,15 @@ const COMPANY_MULTIPLIER = {
     8: 1
 };
 
+function getDb() {
+    if (!db) {
+        throw new Error(
+            "MongoDB chưa được khởi tạo. Cần cấu hình app.mongoDb trong ../config/app"
+        );
+    }
+
+    return db;
+}
 
 function goldPriceCol() {
     return getDb().collection(GOLD_PRICE_COLLECTION);
@@ -103,7 +100,6 @@ function companyCol() {
 }
 
 function logCol(name) {
-
     return getDb().collection(name);
 }
 
@@ -434,110 +430,108 @@ exports.syncAllBrandsFromLogs = async function syncAllBrandsFromLogs() {
     }
 };
 
+/**
+ * Lấy giá vàng mới nhất cho trang listing.
+ */
 exports.getDataPagePrice = async function getDataPagePrice() {
-    try {
-        const result = await goldPriceCol().aggregate([
-            {
-                $match: {
-                    company_id: {
-                        $in: [1, 2, 3, 4, 5, 6, 7, 8]
+    const companyIds = Object.values(BRAND_CONFIG).map(item => item.companyId);
+
+    const rows = await goldPriceCol()
+        .aggregate(
+            [
+                {
+                    $match: {
+                        company_id: {
+                            $in: companyIds
+                        }
+                    }
+                },
+
+                {
+                    $sort: {
+                        company_id: 1,
+                        name: 1,
+                        area: 1,
+                        date_sync: -1
+                    }
+                },
+
+                {
+                    $group: {
+                        _id: {
+                            company_id: "$company_id",
+                            name: "$name",
+                            area: "$area"
+                        },
+                        doc: {
+                            $first: "$$ROOT"
+                        }
+                    }
+                },
+
+                {
+                    $replaceRoot: {
+                        newRoot: "$doc"
+                    }
+                },
+
+                {
+                    $sort: {
+                        company_id: 1,
+                        _id: 1
                     }
                 }
-            },
+            ],
             {
-                $sort: {
-                    company_id: 1,
-                    name: 1,
-                    area: 1,
-                    date_sync: -1,
-                    _id: -1
-                }
-            },
-            {
-                $group: {
-                    _id: {
-                        company_id: "$company_id",
-                        name: "$name",
-                        area: "$area"
-                    },
-                    row: {
-                        $first: "$$ROOT"
-                    }
-                }
-            },
-            {
-                $replaceRoot: {
-                    newRoot: "$row"
-                }
-            },
-            {
-                $lookup: {
-                    from: "company",
-                    localField: "company_id",
-                    foreignField: "id",
-                    as: "company"
-                }
-            },
-            {
-                $unwind: {
-                    path: "$company",
-                    preserveNullAndEmptyArrays: true
-                }
-            },
-            {
-                $sort: {
-                    company_id: 1,
-                    _id: 1
-                }
+                allowDiskUse: true
             }
-        ], {
-            allowDiskUse: true
-        }).toArray();
+        )
+        .toArray();
 
-        if (!Array.isArray(result) || result.length === 0) {
-            return [];
-        }
-
-        const map = {};
-
-        for (const row of result) {
-            const compId = row.company_id;
-
-            if (!map[compId]) {
-                map[compId] = {
-                    company_id: compId,
-                    company_name: row.company
-                        ? row.company.name + " | " + row.company.content
-                        : "",
-                    items: []
-                };
-            }
-
-            const buyStr = normalizeMoney(row.buy ?? row.buy_raw, compId);
-            const sellStr = normalizeMoney(row.sell ?? row.sell_raw, compId);
-
-            map[compId].items.push({
-                id: row._id,
-                name: row.name,
-                area: row.area,
-                companyId: compId,
-                buy: buyStr,
-                sell: sellStr,
-                diff_yesterday_buy: row.diff_yesterday_buy,
-                diff_yesterday_sell: row.diff_yesterday_sell,
-                last_update: row.last_update,
-                date_sync: row.date_sync
-                    ? moment(row.date_sync).format("YYYY-MM-DD HH:mm:ss")
-                    : null
-            });
-        }
-
-        return Object.values(map);
-    } catch (e) {
-        console.log("Ex getDataPagePrice", e);
+    if (!rows || rows.length === 0) {
         return [];
     }
+
+    const companyMap = await getCompanyMap();
+
+    const map = {};
+
+    for (const row of rows) {
+        const compId = row.company_id;
+        const company = companyMap[compId];
+
+        if (!map[compId]) {
+            map[compId] = {
+                company_id: compId,
+                company_name: company
+                    ? `${company.name} | ${company.content || ""}`
+                    : "",
+                items: []
+            };
+        }
+
+        const buyStr = normalizeMoney(row.buy !== undefined ? row.buy : row.buy_raw);
+        const sellStr = normalizeMoney(row.sell !== undefined ? row.sell : row.sell_raw);
+
+        map[compId].items.push({
+            id: row._id,
+            name: row.name,
+            area: row.area,
+            companyId: compId,
+            buy: buyStr,
+            sell: sellStr,
+            diff_yesterday_buy: row.diff_yesterday_buy,
+            diff_yesterday_sell: row.diff_yesterday_sell,
+            last_update: row.last_update,
+            date_sync: row.date_sync
+                ? moment(row.date_sync).format("YYYY-MM-DD HH:mm:ss")
+                : null
+        });
+    }
+
+    return Object.values(map);
 };
+
 /**
  * Lấy thời gian sync mới nhất.
  */

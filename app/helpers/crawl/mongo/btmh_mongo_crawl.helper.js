@@ -7,9 +7,9 @@ const cheerio = require("cheerio");
 const moment = require("moment");
 
 // 👉 helper Mongo (file mình đã viết ở trên)
-const btmcGoldHelper = require("./btmc_mongo_gold.helper"); // chỉnh path cho đúng
+const btmcGoldHelper = require("../../mongo/btmh_mongo_gold.helper"); // chỉnh path cho đúng
 
-const URL = "https://giavang.org/trong-nuoc/bao-tin-minh-chau/";
+const URL = "https://giavang.org/trong-nuoc/bao-tin-manh-hai/";
 
 // Chuẩn hoá giá từ giavang.org
 function normalizePriceFromGiaVangOrg(cellText) {
@@ -34,7 +34,7 @@ function normalizePriceFromGiaVangOrg(cellText) {
  * - Nếu trùng thì không crawl thêm
  * - Nếu mới thì build danh sách items, có thể lưu vào Mongo bằng helper
  */
-exports.fetchGiavangOrgBTMC = async function fetchGiavangOrgBTMC() {
+exports.fetchGiavangOrgBTMH = async function fetchGiavangOrgBTMH() {
     try {
         // 1) Gọi trang giavang.org
         const res = await axios.get(URL, {
@@ -61,12 +61,12 @@ exports.fetchGiavangOrgBTMC = async function fetchGiavangOrgBTMC() {
         // 3) So với DB – nếu không có dữ liệu mới thì thôi
         const last_update_db = await btmcGoldHelper.getLastUpdateTime();
 
-        console.log("[GIAVANG-BTMC] last_update trang   :", last_update);
-        console.log("[GIAVANG-BTMC] last_update trong DB:", last_update_db);
+        console.log("[GIAVANG-BTMH] last_update trang   :", last_update);
+        console.log("[GIAVANG-BTMH] last_update trong DB:", last_update_db);
 
         if (last_update && last_update_db && last_update === last_update_db) {
             console.log(
-                "[GIAVANG-BTMC] last_update trùng DB (Mongo), không crawl thêm."
+                "[GIAVANG-BTMH] last_update trùng DB (Mongo), không crawl thêm."
             );
             return [];
         }
@@ -77,14 +77,14 @@ exports.fetchGiavangOrgBTMC = async function fetchGiavangOrgBTMC() {
 
         if (!table || !table.length) {
             console.log(
-                "❌ [GIAVANG-BTMC] Không tìm thấy bảng trong .table-responsive"
+                "❌ [GIAVANG-BTMH] Không tìm thấy bảng trong .table-responsive"
             );
             return [];
         }
 
         const items = [];
         const rows = table.find("tbody tr");
-        console.log("[GIAVANG-BTMC] Số <tr> trong tbody:", rows.length);
+        console.log("[GIAVANG-BTMH] Số <tr> trong tbody:", rows.length);
 
         // Giữ thương phẩm hiện tại (VRTL, Nhẫn tròn trơn, Vàng SJC, Vàng BTMC, ...)
         let currentBrand = "";
@@ -153,9 +153,9 @@ exports.fetchGiavangOrgBTMC = async function fetchGiavangOrgBTMC() {
             });
         });
 
-        console.log("[GIAVANG-BTMC] Tổng items lấy được:", items.length);
+        console.log("[GIAVANG-BTMH] Tổng items lấy được:", items.length);
         console.log(
-            "[GIAVANG-BTMC] Thống kê theo khu vực:",
+            "[GIAVANG-BTMH] Thống kê theo khu vực:",
             items.reduce((acc, it) => {
                 const key = it.area || "NO_AREA";
                 acc[key] = (acc[key] || 0) + 1;
@@ -167,12 +167,12 @@ exports.fetchGiavangOrgBTMC = async function fetchGiavangOrgBTMC() {
         // if (items.length > 0) {
         //     await btmcGoldHelper.insertCrawledPricesWithDiffYesterday(items);
         //     console.log(
-        //         "[GIAVANG-BTMC] Đã lưu items vào Mongo (log_crawl_btmc + diff_yesterday)"
+        //         "[GIAVANG-BTMH] Đã lưu items vào Mongo (log_crawl_btmh + diff_yesterday)"
         //     );
         // }
         return items;
     } catch (err) {
-        console.log("❌ [GIAVANG-BTMC] Lỗi fetchGiavangOrgBTMC:", err);
+        console.log("❌ [GIAVANG-BTMH] Lỗi fetchGiavangOrgBTMH:", err);
         return [];
     }
 };

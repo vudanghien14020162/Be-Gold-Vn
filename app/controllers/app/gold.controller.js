@@ -215,7 +215,7 @@ exports.fillDataIntoGold = async function fillDataIntoGold(req, res, options = {
             success: true,
             data,
         });
-        await queue_syn_data_craw_into_gold_data.createJob({}).save();
+        // await queue_syn_data_craw_into_gold_data.createJob({}).save();
 
     } catch (err) {
         console.error(err);

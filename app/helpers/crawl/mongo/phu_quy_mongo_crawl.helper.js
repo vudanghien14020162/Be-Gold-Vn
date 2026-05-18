@@ -4,7 +4,7 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 const moment = require("moment");
-const phuquy_gold_helper = require("./phu_quy_mongo_gold.helper");
+const phuquy_gold_helper = require("../../mongo/phu_quy_mongo_gold.helper");
 
 const URL = "https://giavang.org/trong-nuoc/phu-quy/";
 
